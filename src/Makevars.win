@@ -1,5 +1,18 @@
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
-FT_OBJS = 00_lb.o 00_lbfgsb.o 00_main.o 00_specfun.o 01_Nelder.o 01_RNG.o 02_base.o 
+FT_OBJS = 00_lbfgsb.f90 00_main.f90 00_specfun.f90 01_Nelder.f90 01_RNG.f90 02_base.f90 03_barc.f90 03_barfima.f90 03_karfima.f90 03_garfima.f90 03_uwarfima.f90
 
-$(SHLIB): $(FT_OBJS) 03_barc.o 03_barfima.o 03_karfima.o 03_garfima.o 03_uwarfima.o
+# Define the order of compilation
+OBJECTS = $(FT_OBJS:.f90=.o) 
+
+$(SHLIB): $(OBJECTS)
+
+# Setup dependencies for parallel make
+01_Nelder.o: 00_main.o
+01_RNG.o: 00_main.o 00_specfun.o
+02_base.o: 00_main.o 00_specfun.o 00_lbfgsb.o 01_Nelder.o 01_RNG.o
+03_barc.o: 00_main.o 02_base.o
+03_barfima.o: 00_main.o 02_base.o 
+03_karfima.o: 00_main.o 02_base.o 
+03_garfima.o: 00_main.o 02_base.o 
+03_uwarfima.o: 00_main.o 02_base.o

@@ -17,17 +17,13 @@
 #################################################################################
 
 ##--------------------------------------------------------------------------------
-src/00_lb.f90
+src/00_lbfgsb.f90
 
 Contains the subroutines
 	dtrsl, dpofa, ddot
 which are part of LINPACK, with authors J.J. Dongarra, Cleve Moler and G.W. Stewart.
 They were taken from the Netlib archive now at www.netlib.org and do not 
 clearly state their copyright status.
-##--------------------------------------------------------------------------------
-
-##--------------------------------------------------------------------------------
-src/00_lbfgsb.f90
 
 Contains the subroutines of l-bfgs-b algorithm Written by 
 Ciyou Zhu, Richard Byrd, Jorge Nocedal, Jose Luis Morales and Peihuang Lu-Chen.

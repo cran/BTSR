@@ -16,7 +16,6 @@ module base
   use Nelder_mead ! Nelder-Mead   algorithm
   implicit none  
 
-
   interface allocate_model
      module procedure allocate_model1
      module procedure allocate_model2

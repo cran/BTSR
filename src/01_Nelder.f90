@@ -1,4 +1,4 @@
-MODULE Nelder_Mead
+MODULE Nelder_mead
   !-----------------------------------------------------------------------------------
   ! Modifyed by: Taiane Schaedler Prass
   ! Porto Alegre, 8/2019
@@ -490,4 +490,4 @@ CONTAINS
     RETURN
   END SUBROUTINE minim
 
-END MODULE Nelder_Mead
+END MODULE Nelder_mead
