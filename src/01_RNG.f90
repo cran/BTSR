@@ -9,7 +9,6 @@ module RNG_mod
   !
   !----------------------------------------------------------
 
-  use main_mod, only : argsDist
   use specfun
   implicit none
   private

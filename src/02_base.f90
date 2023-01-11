@@ -3242,7 +3242,7 @@ end subroutine linkR
 subroutine btsrpredictR(n, y, ylower, yupper, gy, nreg, xreg, escale, error, &
      nnew, xnew, ynew, link, npar, par, fixa, alpha, fixB, flagsb, fvbeta, &
      p, fixar, flagsar, fvar, xregar, q, fixma, flagsma, fvma, fixd, d, fixnu, nu, &
-     inf) 
+     inf)     
   !-----------------------------------------------------------------------------------------
   !
   !  Subrotuine used for prediction.

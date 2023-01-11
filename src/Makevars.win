@@ -9,7 +9,7 @@ $(SHLIB): $(OBJECTS)
 
 # Setup dependencies for parallel make
 01_Nelder.o: 00_main.o
-01_RNG.o: 00_main.o 00_specfun.o
+01_RNG.o: 00_specfun.o
 02_base.o: 00_main.o 00_specfun.o 00_lbfgsb.o 01_Nelder.o 01_RNG.o
 03_barc.o: 00_main.o 02_base.o
 03_barfima.o: 00_main.o 02_base.o 

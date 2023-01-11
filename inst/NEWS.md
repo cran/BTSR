@@ -20,3 +20,8 @@
 * We have added more information to src/Makevars in order to 
 	setup dependencies for parallel make.	
 	
+### 0.1.3 (2023-01-10)
+
+* Minor fix
+
+* We have added the file src/BTSR_init.c 
