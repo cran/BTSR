@@ -788,7 +788,7 @@ subroutine predictbarcR(n, y, gy, nreg, xreg, escale, error, Ts, nnew, xnew, yne
   !-------------------------------------------------------------
   call allocate_model(model, n, y, gy, nreg, xreg, xstart,1-fixnu, nu, 1-fixa, alpha, &
        nreg-fixb, flagsb, fvbeta, xregar, p, p-fixar, flagsar, fvar, 0, 0, (/0/), (/0.d0/),&
-       1, 0.d0, 0, 0)
+       0, 0.d0, 0, 0)
 
   !-------------------------------------------------------------
   ! allocating the orbit

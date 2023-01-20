@@ -542,7 +542,7 @@ third edition, ninth printing.
 
 L'Ecuyer, P. (1999). Good parameters and implementations for combined
 multiple recursive random number generators. Operations Research, 47,
-159-164. <doi: 10.1287/opre.47.1.159.>
+159-164. \url{doi:10.1287/opre.47.1.159.}
 
 Matsumoto, M. and Nishimura, T. (1998). Mersenne Twister: A 623-dimensionally
 equidistributed uniform pseudo-random number generator, ACM Transactions on

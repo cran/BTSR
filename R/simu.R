@@ -100,7 +100,136 @@
   invisible(out)
 }
 
+#-------------------------------------------------------
+#  Fix-me
+#-------------------------------------------------------
+#  Using
+#  foo <- .check.model(model[1], "sim")
+#  and then
+#  .Fortran(foo,...)
+#  gives an error during the registration process
+#  Therefore, for now, we are using the auxiliary
+#  functions defined in the sequel
+#-------------------------------------------------------
+.btsr.sim.barfima <- function(configs, inf){
+  .Fortran('simbarfimar',
+           n = configs$n,
+           burn = configs$burn,
+           pdist = configs$nu,
+           alpha = configs$alpha,
+           nreg = configs$nreg,
+           beta = configs$beta,
+           p = configs$p,
+           phi = configs$phi,
+           q = configs$q,
+           theta = configs$theta,
+           d = configs$d,
+           linkg = configs$linkg,
+           xreg  = configs$xreg,
+           xregar = configs$xregar,
+           yt = numeric(configs$n+configs$burn),
+           ystart = configs$y.start,
+           xstart = configs$xreg.start,
+           mut = numeric(configs$n+configs$burn),
+           etat = numeric(configs$n+configs$burn),
+           error = numeric(configs$n+configs$burn),
+           escale = configs$error.scale,
+           ns = length(configs$seed),
+           seed = configs$seed,
+           rngtype = configs$rngtype,
+           inf = as.integer(inf),
+           rev = 1L)
+}
 
+.btsr.sim.karfima <- function(configs, inf){
+  .Fortran('simkarfimar',
+           n = configs$n,
+           burn = configs$burn,
+           pdist = configs$nu,
+           alpha = configs$alpha,
+           nreg = configs$nreg,
+           beta = configs$beta,
+           p = configs$p,
+           phi = configs$phi,
+           q = configs$q,
+           theta = configs$theta,
+           d = configs$d,
+           linkg = configs$linkg,
+           xreg  = configs$xreg,
+           xregar = configs$xregar,
+           yt = numeric(configs$n+configs$burn),
+           ystart = configs$y.start,
+           xstart = configs$xreg.start,
+           mut = numeric(configs$n+configs$burn),
+           etat = numeric(configs$n+configs$burn),
+           error = numeric(configs$n+configs$burn),
+           escale = configs$error.scale,
+           ns = length(configs$seed),
+           seed = configs$seed,
+           rngtype = configs$rngtype,
+           inf = as.integer(inf),
+           rev = 1L)
+}
+
+.btsr.sim.garfima <- function(configs, inf){
+  .Fortran('simgarfimar',
+           n = configs$n,
+           burn = configs$burn,
+           pdist = configs$nu,
+           alpha = configs$alpha,
+           nreg = configs$nreg,
+           beta = configs$beta,
+           p = configs$p,
+           phi = configs$phi,
+           q = configs$q,
+           theta = configs$theta,
+           d = configs$d,
+           linkg = configs$linkg,
+           xreg  = configs$xreg,
+           xregar = configs$xregar,
+           yt = numeric(configs$n+configs$burn),
+           ystart = configs$y.start,
+           xstart = configs$xreg.start,
+           mut = numeric(configs$n+configs$burn),
+           etat = numeric(configs$n+configs$burn),
+           error = numeric(configs$n+configs$burn),
+           escale = configs$error.scale,
+           ns = length(configs$seed),
+           seed = configs$seed,
+           rngtype = configs$rngtype,
+           inf = as.integer(inf),
+           rev = 1L)
+}
+
+.btsr.sim.uwarfima <- function(configs, inf){
+  .Fortran('simuwarfimar',
+           n = configs$n,
+           burn = configs$burn,
+           pdist = configs$nu,
+           alpha = configs$alpha,
+           nreg = configs$nreg,
+           beta = configs$beta,
+           p = configs$p,
+           phi = configs$phi,
+           q = configs$q,
+           theta = configs$theta,
+           d = configs$d,
+           linkg = configs$linkg,
+           xreg  = configs$xreg,
+           xregar = configs$xregar,
+           yt = numeric(configs$n+configs$burn),
+           ystart = configs$y.start,
+           xstart = configs$xreg.start,
+           mut = numeric(configs$n+configs$burn),
+           etat = numeric(configs$n+configs$burn),
+           error = numeric(configs$n+configs$burn),
+           escale = configs$error.scale,
+           ns = length(configs$seed),
+           seed = configs$seed,
+           rngtype = configs$rngtype,
+           inf = as.integer(inf),
+           rev = 1L)
+}
 
 ##---------------------------------------------------------------------------
 ## internal function:
@@ -108,42 +237,20 @@
 ## Also used to summarize the results of the simulation and return
 ## only the relevant variables
 ##---------------------------------------------------------------------------
-.btsr.sim <- function(model, inf, configs, complete, debug){
+.btsr.sim <- function(model = "BARFIMA", inf, configs, complete, debug){
 
   if(abs(configs$d) > 0 & inf < 100){
     warning(paste("non-zero d and inf = ", inf,
                   ". Be carefull, this value may be too small",
                   sep = ""), immediate. = TRUE)}
 
-  fun <- .check.model(model[1],"sim")
+  #fun <- .check.model(model[1],"sim")
 
-  out <- .Fortran(fun,
-                  n = configs$n,
-                  burn = configs$burn,
-                  pdist = configs$nu,
-                  alpha = configs$alpha,
-                  nreg = configs$nreg,
-                  beta = configs$beta,
-                  p = configs$p,
-                  phi = configs$phi,
-                  q = configs$q,
-                  theta = configs$theta,
-                  d = configs$d,
-                  linkg = configs$linkg,
-                  xreg  = configs$xreg,
-                  xregar = configs$xregar,
-                  yt = numeric(configs$n+configs$burn),
-                  ystart = configs$y.start,
-                  xstart = configs$xreg.start,
-                  mut = numeric(configs$n+configs$burn),
-                  etat = numeric(configs$n+configs$burn),
-                  error = numeric(configs$n+configs$burn),
-                  escale = configs$error.scale,
-                  ns = length(configs$seed),
-                  seed = configs$seed,
-                  rngtype = configs$rngtype,
-                  inf = as.integer(inf),
-                  rev = 1L)
+  out <- switch(EXPR     =  model,
+                BARFIMA  = .btsr.sim.barfima(configs, inf),
+                GARFIMA  = .btsr.sim.garfima(configs, inf),
+                KARFIMA  = .btsr.sim.karfima(configs, inf),
+                UWARFIMA = .btsr.sim.uwarfima(configs, inf))
 
   if(out$rev == 1){
     warning("Revision Required. Try changing the link functions\n", immediate. = TRUE)
