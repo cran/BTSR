@@ -148,7 +148,7 @@ NULL
 ##'      64-bit KISS (Keep It Simple Stupid) random number generator distributed by
 ##'      George Marsaglia in <https://groups.google.com/d/topic/comp.lang.fortran/qFv18ql_WlU>
 ##'     \item \code{5}: Knuth's 2002 algorithm (Knuth, 202). FORTRAN code adapted
-##'     from <https://www-cs-faculty.stanford.edu/~uno/programs/frng.f>
+##'     from <https://www-cs-faculty.stanford.edu/~knuth/programs/frng.f>
 ##'     \item \code{6}: L'Ecuyer's 1999 algorithm - 64-bits (L'Ecuyer, 1999).
 ##'     FORTRAN code adapted from <https://jblevins.org/mirror/amiller/lfsr258.f90>
 ##'   }

@@ -1,8 +1,8 @@
 Package: BTSR
 Type: Package
-Date: 2023-01-19
+Date: 2023-09-22
 Title: Bounded Time Series Regression
-Version: 0.1.4
+Version: 0.1.5
 Authors@R: c(person(c("Taiane", "Schaedler"),"Prass",
                      email = "taianeprass@gmail.com", 
                      role = c("aut","cre","com"),  
@@ -48,8 +48,8 @@ Description: Simulate, estimate and forecast a wide range of regression based dy
 License: GPL (>= 3)
 Encoding: UTF-8
 NeedsCompilation: yes
-RoxygenNote: 7.2.2
-Packaged: 2023-01-19 18:39:24 UTC; Taiane
+RoxygenNote: 7.2.3
+Packaged: 2023-09-22 18:49:39 UTC; Taiane
 Author: Taiane Schaedler Prass [aut, cre, com]
     (<https://orcid.org/0000-0003-3136-909X>),
   Guilherme Pumi [ctb, aut] (<https://orcid.org/0000-0002-6256-3170>),
@@ -79,4 +79,4 @@ Author: Taiane Schaedler Prass [aut, cre, com]
   Catherine Loader [ctb]
 Maintainer: Taiane Schaedler Prass <taianeprass@gmail.com>
 Repository: CRAN
-Date/Publication: 2023-01-20 07:20:08 UTC
+Date/Publication: 2023-09-23 22:50:12 UTC

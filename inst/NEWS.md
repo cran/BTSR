@@ -1,3 +1,15 @@
+### 0.1.5
+
+* Minor Revision
+
+* Added the "_PACKAGE" special sentinel to fix the problem related to the fact that @docType package no longer automatically adds a -package alias.
+
+* Temporary disabled all subroutines that use integer(kind=8) (file 01_RNG.f90).
+
+* Fixed the ``not yet implemented: derived type components with non default lower bounds'' message due to mag01 component in 01_RNG.f90 file and changed subroutines that use this component accordingly.
+
+* Submission date: 	2023-09-22
+
 ### 0.1.4 (2023-01-19)
 
 * Minor fix

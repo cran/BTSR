@@ -19,6 +19,7 @@ module RNG_mod
   public :: ruw, duw
 
   integer, parameter :: dp = kind(1.d0)
+  !integer, parameter :: di = kind(1_8)
   real(dp), parameter :: pi = 3.141592653589793238462643383280d0
   real(dp), parameter :: M_2PI = 6.283185307179586476925286766559d0   !/* 2*pi */
   real(dp), parameter :: i2_32m1 = 2.328306437080797e-10 !/* = 1/(2**32 - 1) */
@@ -48,9 +49,9 @@ module RNG_mod
   !---------------------------------------------------------------
   integer, parameter :: default_xyzw32(4) &
        = (/123456789, 362436069, 521288629, 916191069/)
-  integer(kind=8), parameter :: default_xyzw64(4) &
-       = (/1234567890987654321_8, 362436362436362436_8, &
-       1066149217761810_8, 123456123456123456_8/)
+  !integer(di), parameter :: default_xyzw64(4) &
+  !     = (/1234567890987654321_8, 362436362436362436_8, &
+  !     1066149217761810_8, 123456123456123456_8/)
 
   !---------------------------------------------------------------
   ! Knuth
@@ -62,8 +63,8 @@ module RNG_mod
   !---------------------------------------------------------------
   !  L'Ecuyer's 1999 random number generator. 64-bits
   !---------------------------------------------------------------
-  integer(kind=8), parameter, dimension(5) :: default_seedLe64 = &
-       (/153587801,  -759022222,  -759022222, -1718083407, -123456789/)
+  !integer(di), parameter, dimension(5) :: default_seedLe64 = &
+  !     (/153587801,  -759022222,  -759022222, -1718083407, -123456789/)
 
   type :: rng_t
      integer :: type = 2
@@ -79,12 +80,12 @@ module RNG_mod
      !----------------------------------------
      integer, allocatable :: mt(:)
      integer :: mti = n1_mt   ! mti == N+1 means mt[N] is not initialized
-     integer, dimension(0:1) :: mag01 = (/0,mata/)
+     integer, dimension(2) :: mag01 = (/0,mata/)
 
      !---------------------------------------
      ! Marsaglia-MultiCarry (kiss64). 
      !---------------------------------------
-     integer(KIND=8), dimension(5) :: state64
+     !integer(di), dimension(5) :: state64
 
      !----------------------------------------
      !  Knuth
@@ -309,14 +310,14 @@ contains
     if(self%mti >= n_mt) then      
        do k = 0, (n_mt - m_mt - 1)
           y = ior(iand(self%mt(k),umask), iand(self%mt(k+1),lmask))
-          self%mt(k) = ieor(ieor(self%mt(k+m_mt), ishft(y,-1)),self%mag01(iand(y,1)))
+          self%mt(k) = ieor(ieor(self%mt(k+m_mt), ishft(y,-1)),self%mag01(iand(y,1)+1))
        end do
        do  k = (n_mt - m_mt), (n_mt - 2)
           y = ior(iand(self%mt(k),umask), iand(self%mt(k+1),lmask))
-          self%mt(k) = ieor(ieor(self%mt(k+(m_mt-n_mt)), ishft(y,-1)),self%mag01(iand(y,1)))
+          self%mt(k) = ieor(ieor(self%mt(k+(m_mt-n_mt)), ishft(y,-1)),self%mag01(iand(y,1)+1))
        end do
        y = ior(iand(self%mt(n_mt-1),umask), iand(self%mt(0),lmask))
-       self%mt(n_mt-1) = ieor(ieor(self%mt(m_mt-1), ishft(y,-1)),self%mag01(iand(y,1)))
+       self%mt(n_mt-1) = ieor(ieor(self%mt(m_mt-1), ishft(y,-1)),self%mag01(iand(y,1)+1))
        self%mti = 0
     end if
 
@@ -424,54 +425,54 @@ contains
   !   Porto Alegre, 2012
   !
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  subroutine rng_seed_kiss64(self, seed)
-    implicit none
-    type(rng_t), intent(inout) :: self
-    integer, intent(in) :: seed(4)
-    integer :: i
-    do i = 1,4
-       self%state64(i) = default_xyzw64(i)+int(seed(i),8)
-    end do
-    return
-  end subroutine rng_seed_kiss64
+  !subroutine rng_seed_kiss64(self, seed)
+  !  implicit none
+  !  type(rng_t), intent(inout) :: self
+  !  integer, intent(in) :: seed(4)
+  !  integer :: i
+  !  do i = 1,4
+  !     self%state64(i) = default_xyzw64(i)+int(seed(i),8)
+  !  end do
+  !  return
+  !end subroutine rng_seed_kiss64
 
-  function m_kiss64(k, n) result(m)
-    implicit none
-    integer(kind=8), intent(in) :: k,n
-    integer(kind=8) :: m
-    m = ieor (k, ishft (k, n) )
-    return
-  end function m_kiss64
+  !function m_kiss64(k, n) result(m)
+  !  implicit none
+  !  integer(di), intent(in) :: k,n
+  !  integer(di) :: m
+  !  m = ieor (k, ishft (k, n) )
+  !  return
+  !end function m_kiss64
 
-  function rng_uniform_kiss64(self) result(fn_val)
-    implicit none
-    type(rng_t), intent(inout) :: self
-    integer(kind=8) ::  kiss, t
-    real (dp) :: fn_val
-    real (dp), parameter :: huge64=9223372036854775808.0d0  ! 2**63
-
-    if(self%initialize) then
-       call rng_seed_kiss64(self, (/0,0,0,0/)) 
-       self%initialize = .false.
-    end if
-
-    t = ishft(self%state64(1), 58) + self%state64(4)
-    if (ishft(self%state64(1), -63)  == ishft(t, -63)) then
-       self%state64(4) = ishft(self%state64(1),-6) + ishft(self%state64(1), -63)
-    else
-       self%state64(4) = ishft(self%state64(1),-6) + 1 - ishft(self%state64(1)+t, -63)
-    end if
-    self%state64(1) = t + self%state64(1)
-    self%state64(2) = m_kiss64( m_kiss64( m_kiss64(self%state64(2),13_8), -17_8 ), 43_8 )
-    self%state64(3) = 6906969069_8 * self%state64(3) + 1234567_8
-    kiss = self%state64(1) + self%state64(2) + self%state64(3)
-
-    !-----------------------------------------------------------
-    ! Real random numbers with uniform distribution in [0,1]
-    !-----------------------------------------------------------
-    fn_val = 0.5d0 * ( 1.d0 + real(kiss, 8)/huge64 )
-    return
-  end function rng_uniform_kiss64
+  !function rng_uniform_kiss64(self) result(fn_val)
+  !  implicit none
+  !  type(rng_t), intent(inout) :: self
+  !  integer(di) ::  kiss, t
+  !  real (dp) :: fn_val
+  !  real (dp), parameter :: huge64=9223372036854775808.0d0  ! 2**63
+  !
+  ! if(self%initialize) then
+  !     call rng_seed_kiss64(self, (/0,0,0,0/)) 
+  !     self%initialize = .false.
+  !  end if
+  !
+  ! t = ishft(self%state64(1), 58) + self%state64(4)
+  !  if (ishft(self%state64(1), -63)  == ishft(t, -63)) then
+  !     self%state64(4) = ishft(self%state64(1),-6) + ishft(self%state64(1), -63)
+  !  else
+  !     self%state64(4) = ishft(self%state64(1),-6) + 1 - ishft(self%state64(1)+t, -63)
+  !  end if
+  !  self%state64(1) = t + self%state64(1)
+  !  self%state64(2) = m_kiss64( m_kiss64( m_kiss64(self%state64(2),13_8), -17_8 ), 43_8 )
+  !  self%state64(3) = 6906969069_8 * self%state64(3) + 1234567_8
+  !  kiss = self%state64(1) + self%state64(2) + self%state64(3)
+  !
+  !  !-----------------------------------------------------------
+  !  ! Real random numbers with uniform distribution in [0,1]
+  !  !-----------------------------------------------------------
+  !  fn_val = 0.5d0 * ( 1.d0 + real(kiss, 8)/huge64 )
+  !  return
+  !end function rng_uniform_kiss64
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   !
@@ -673,55 +674,55 @@ contains
   !   Porto Alegre, 2012
   !
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  subroutine rng_seed_lfsr258(self, seed)
-    implicit none
-    type(rng_t), intent(inout) :: self
-    integer, intent(in) :: seed(5)
-    integer :: i
-    do i = 1,5       
-       self%state64(1:5) = default_seedLe64 + int(seed(i), 8)
-    end do
-    if (iand(self%state64(1), -int(2,8)) == 0) self%state64(1) = self%state64(1) - 8388607
-    if (iand(self%state64(2), -int(512,8)) == 0) self%state64(2) = self%state64(2) - 8388607
-    if (iand(self%state64(3), -int(4096,8)) == 0) self%state64(3) = self%state64(3) - 8388607
-    if (iand(self%state64(4), -int(131072,8)) == 0) self%state64(4) = self%state64(4) - 8388607
-    if (iand(self%state64(5),-int(8388608,8)) == 0) self%state64(5) = self%state64(5) - 8388607
-    return
-  end subroutine rng_seed_lfsr258
+  !subroutine rng_seed_lfsr258(self, seed)
+  !  implicit none
+  !  type(rng_t), intent(inout) :: self
+  !  integer, intent(in) :: seed(5)
+  !  integer :: i
+  !  do i = 1,5       
+  !     self%state64(1:5) = default_seedLe64 + int(seed(i), 8)
+  !  end do
+  !  if (iand(self%state64(1), -int(2,8)) == 0) self%state64(1) = self%state64(1) - 8388607
+  !  if (iand(self%state64(2), -int(512,8)) == 0) self%state64(2) = self%state64(2) - 8388607
+  !  if (iand(self%state64(3), -int(4096,8)) == 0) self%state64(3) = self%state64(3) - 8388607
+  !  if (iand(self%state64(4), -int(131072,8)) == 0) self%state64(4) = self%state64(4) - 8388607
+  !  if (iand(self%state64(5),-int(8388608,8)) == 0) self%state64(5) = self%state64(5) - 8388607
+  !  return
+  !end subroutine rng_seed_lfsr258
 
-  function rng_uniform_Le(self) result(random_numb)
-    implicit none
-    type(rng_t), intent(inout) :: self
-    real (dp) :: random_numb
-    integer (kind = 8)  :: b, dummy
-
-    if(self%initialize) then
-       call rng_seed_lfsr258(self,(/0,0,0,0,0/))
-       self%initialize = .false.
-    end if
-
-    !----------------------------------------------------------------
-    ! N.B. ISHFT(i,j) is a bitwise (non-circular) shift operation;
-    !      to the left if j > 0, otherwise to the right.
-    !----------------------------------------------------------------
-    b  = ishft( ieor( ishft(self%state64(1),1), self%state64(1)), -53)
-    self%state64(1) = ieor( ishft( iand(self%state64(1),-int(2,8)), 10), b)
-    b  = ishft( ieor( ishft(self%state64(2),24), self%state64(2)), -50)
-    self%state64(2) = ieor( ishft( iand(self%state64(2),-int(512,8)), 5), b)
-    b  = ishft( ieor( ishft(self%state64(3),3), self%state64(3)), -23)
-    self%state64(3) = ieor( ishft( iand(self%state64(3),-int(4096,8)), 29), b)
-    b  = ishft( ieor( ishft(self%state64(4),5), self%state64(4)), -24)
-    self%state64(4) = ieor( ishft( iand(self%state64(4),-int(131072,8)), 23), b)
-    b  = ishft( ieor( ishft(self%state64(5),3), self%state64(5)), -33)
-    self%state64(5) = ieor( ishft( iand(self%state64(5),-int(8388608,8)), 8), b)
-    !----------------------------------------------------------------
-    ! The constant below is the reciprocal of (2^64 - 1)
-    !----------------------------------------------------------------
-    dummy = ieor( ieor( ieor( ieor(self%state64(1),self%state64(2)), &
-         self%state64(3)), self%state64(4)), self%state64(5))
-    random_numb =  dble(dummy) * 5.4210108624275221e-20 + 0.5d0
-    return
-  end function rng_uniform_Le
+  !function rng_uniform_Le(self) result(random_numb)
+  !  implicit none
+  !  type(rng_t), intent(inout) :: self
+  !  real (dp) :: random_numb
+  !  integer (di)  :: b, dummy
+  !
+  !  if(self%initialize) then
+  !     call rng_seed_lfsr258(self,(/0,0,0,0,0/))
+  !     self%initialize = .false.
+  !  end if
+  ! 
+  !  !----------------------------------------------------------------
+  !  ! N.B. ISHFT(i,j) is a bitwise (non-circular) shift operation;
+  !  !      to the left if j > 0, otherwise to the right.
+  !  !----------------------------------------------------------------
+  !  b  = ishft( ieor( ishft(self%state64(1),1), self%state64(1)), -53)
+  !  self%state64(1) = ieor( ishft( iand(self%state64(1),-int(2,8)), 10), b)
+  !  b  = ishft( ieor( ishft(self%state64(2),24), self%state64(2)), -50)
+  !  self%state64(2) = ieor( ishft( iand(self%state64(2),-int(512,8)), 5), b)
+  !  b  = ishft( ieor( ishft(self%state64(3),3), self%state64(3)), -23)
+  !  self%state64(3) = ieor( ishft( iand(self%state64(3),-int(4096,8)), 29), b)
+  !  b  = ishft( ieor( ishft(self%state64(4),5), self%state64(4)), -24)
+  !  self%state64(4) = ieor( ishft( iand(self%state64(4),-int(131072,8)), 23), b)
+  !  b  = ishft( ieor( ishft(self%state64(5),3), self%state64(5)), -33)
+  !  self%state64(5) = ieor( ishft( iand(self%state64(5),-int(8388608,8)), 8), b)
+  !  !----------------------------------------------------------------
+  !  ! The constant below is the reciprocal of (2^64 - 1)
+  !  !----------------------------------------------------------------
+  !  dummy = ieor( ieor( ieor( ieor(self%state64(1),self%state64(2)), &
+  !       self%state64(3)), self%state64(4)), self%state64(5))
+  !  random_numb =  dble(dummy) * 5.4210108624275221e-20 + 0.5d0
+  !  return
+  !end function rng_uniform_Le
 
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   !
@@ -780,35 +781,35 @@ contains
           dummy = seed(1:4)
        end if
        call rng_seed_kiss32(self,dummy)
-    case (4)
-       !----------------------------------------
-       ! Marsaglia-MultiCarry (kiss 64) ns = 4
-       !----------------------------------------
-       allocate(dummy(4))
-       if(ns < 4) then       
-          dummy(1:ns) = seed
-          dummy((ns+1):4) = 0
-       else
-          dummy = seed(1:4)
-       end if
-       call rng_seed_kiss64(self,dummy)
+    !case (4)
+    !   !----------------------------------------
+    !   ! Marsaglia-MultiCarry (kiss 64) ns = 4
+    !   !----------------------------------------
+    !   allocate(dummy(4))
+    !   if(ns < 4) then       
+    !      dummy(1:ns) = seed
+    !      dummy((ns+1):4) = 0
+    !   else
+    !       dummy = seed(1:4)
+    !    end if
+    !    call rng_seed_kiss64(self,dummy)
     case (5)
        !---------------------------------
        ! Knuth (2002). ns = 1
        !---------------------------------
        call rng_seed_rnstrt(self,seed(1))
-    case (6)
-       !-----------------------------------
-       ! L'Ecuyer's (1999, 64-bits). ns = 5
-       !-----------------------------------
-       allocate(dummy(5))
-       if(ns < 5) then       
-          dummy(1:ns) = seed
-          dummy((ns+1):5) = 0
-       else
-          dummy = seed(1:5)
-       end if
-       call rng_seed_lfsr258(self,dummy)
+    !case (6)
+    !   !-----------------------------------
+    !   ! L'Ecuyer's (1999, 64-bits). ns = 5
+    !   !-----------------------------------
+    !   allocate(dummy(5))
+    !   if(ns < 5) then       
+    !      dummy(1:ns) = seed
+    !      dummy((ns+1):5) = 0
+    !   else
+    !      dummy = seed(1:5)
+    !   end if
+    !   call rng_seed_lfsr258(self,dummy)
     end select
     return
   end subroutine rng_seed
@@ -829,11 +830,19 @@ contains
     case (3) ! Marsaglia-MultiCarry (kiss 32)
        fn_val = rng_uniform_kiss32(self)
     case (4) ! Marsaglia-MultiCarry (kiss 64)
-       fn_val = rng_uniform_kiss64(self)
+       !fn_val = rng_uniform_kiss64(self)     
+	   call labelpr(' Kiss64 not avaliable. Using Kiss32 instead', -1)
+       self%type = 3	   
+	   self%initialize = .true.
+	   fn_val = rng_uniform_kiss32(self)	   
     case (5) ! Knuth (2002)
        fn_val = rng_uniform_Knuth(self)
     case (6) ! L'Ecuyer's 1999 (64-bits)
-       fn_val = rng_uniform_Le(self)
+       !fn_val = rng_uniform_Le(self)
+	   call labelpr(" L'Ecuyer's 1999 not avaliable. Using Mersenne Twister instead", -1)
+       self%type = 2	   
+	   self%initialize = .true.
+	   fn_val = rng_uniform_mersenne(self)
     case default
        fn_val = rng_uniform_mersenne(self)
     end select
