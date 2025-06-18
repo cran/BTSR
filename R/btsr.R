@@ -1,54 +1,85 @@
 #' @title
-#' BTSR: Bounded Time Series Regression.
+#' \packageTitle{BTSR}
+#'
+#' @name btsr-package
+#'
+#' @aliases BTSR BTSR-Package
 #'
 #' @description
-#' The BTSR package provides functions to simulate, estimate and forecast a
-#' wide range of regression based dynamic models for bounded time series. The
-#' package covers the most commonly applied models in the literature.
-#' The package's main calculations are done in FORTRAN, which translates into
-#' very fast algorithms.
+#' The BTSR package provides a unified framework for simulating, fitting, and
+#' forecasting bounded time series regression models. It supports a wide
+#' range of models, including i.i.d., regression, ARMA-like, and ARFIMA-like
+#' models, with a focus on bounded time series data.
 #'
-#' @author Taiane Schaedler Prass \email{taianeprass@@gmail.com}
-#' @docType package
-#' @name BTSR.Package
-#' @aliases BTSR
-#' @keywords internal
-"_PACKAGE"
-#' @useDynLib BTSR, .registration=TRUE
+#' Key features of the BTSR package include
+#' \itemize{
+#'  \item Simulation of bounded time series data using various models.
+#'  \item Estimation of model parameters using efficient algorithms.
+#'  \item Forecasting future values based on fitted models.
+#'  \item Support for both short-memory and long-memory models.
+#'  \item Flexible link functions and error scales.
+#' }
+
+#' @template section_mathematical_notation
+#' @template section_btsr_structure
 #'
-#' @section The BTSR structure:
+#' @examples
+#' #----------------------------
+#' # Quickstart examples.
+#' #----------------------------
 #'
-#' The general structure of the deterministic part of a BTSR model is
+#' # Example 1: Simulate i.i.d. samples
+#' set.seed(1234)
+#' y1 <- btsr.sim(model = "BETA", n = 1000, coefs = list(alpha = 0.2, nu = 20))
+#' hist(y1)
 #'
-#'  \deqn{g_1(\mu_t) = \alpha + X_t\beta +
-#'  \sum_{j=1}^p \phi_j[g_2(y_{t-j}) - I_{xregar}X_{t-j}\beta] + h_t}
+#' # Example 2: Simulate ARMA-like model with fixed nu
+#' y2 <- btsr.sim(
+#'   model = "BARMA", n = 100, link = "logit",
+#'   coefs = list(alpha = 0.2, phi = 0.5, theta = 0.3, nu = 20)
+#' )
+#' plot(y2, type = "l")
 #'
-#' where
-#'  \itemize{
-#'    \item \eqn{I_{xregar}} is 0, if \code{xreg} is not included in the AR part of the model and 1,
-#' otherwise
+#' @seealso
+#' For detailed examples and usage instructions, see the documentation for
+#' individual functions
+#' \itemize{
+#'  \item [btsr.sim]: Simulate bounded time series data.
 #'
-#'   \item the term \eqn{h_t} depends on the argument \code{model}:
-#'    \itemize{
-#'     \item for BARC models: \eqn{h_t =  h(T^{t-1}(u_0))}
-#'     \item otherwise: \eqn{h_t =  \sum_{k = 1}^\infty c_k r_{t-k}}
-#'    }
+#'  \item [btsr.extract]: Extract components of a BTSR model, for a given set of
+#'   parameters
 #'
-#'   \item \eqn{g_1} and \eqn{g_2} are the links defined in \code{linkg}.
-#'   Notice that \eqn{g_2} is only used in the AR part of the model and, typically,
-#'   \eqn{g_1 = g_2}.
+#'  \item [btsr.fit]: Fit a BTSR model to data.
 #'
-#'   \item \eqn{r_t} depends on the \code{error.scale} adopted:
-#'   \itemize{
-#'     \item  if \code{error.scale = 0}: \eqn{r_t = y_t - \mu_t} (data scale)
-#'     \item if \code{error.scale = 1}:  \eqn{r_t = g_1(y_t) - g_1(\mu_t)}
-#'      (predictive scale)
-#'   }
+#'  \item [predict]: Forecast future values using a fitted model.
 #'
-#'    \item \eqn{c_k} are the coefficients of \eqn{(1-L)^d\theta(L)}.
-#'    In particular, if \eqn{d = 0}, then \eqn{c_k = \theta_k}, for
-#'    \eqn{k = 1, \dots, q}, and 0 otherwise.
+#'  \item [arguments][arguments]: Shared documentation for arguments
 #' }
 #'
-NULL
-#> NULL
+#' @author
+#' Taiane Schaedler Prass \email{taianeprass@@gmail.com},
+#' Guilherme Pumi \email{guipumi@@gmail.com}
+#'
+#' @importFrom Rdpack reprompt
+#
+#' @references
+#'  \insertRef{bayer2017}{BTSR}
+#'
+#'  \insertRef{pumi2019}{BTSR}
+#'
+#'  \insertRef{pumi2021}{BTSR}
+#'
+#'  \insertRef{pumi2024uw}{BTSR}
+#'
+#'  \insertRef{pumi2024uwc}{BTSR}
+#'
+#'  \insertRef{pumi2025ul}{BTSR}
+#'
+#'  \insertRef{pumi2025matsu}{BTSR}
+#'
+#'  \insertRef{prass2025}{BTSR}
+#'
+#' @useDynLib BTSR, .registration=TRUE
+#'
+#' @keywords package distribution regression
+"_PACKAGE"

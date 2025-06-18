@@ -2,73 +2,76 @@
 #include <Rinternals.h>
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
+#include <Rmath.h>  // needed for some random number generators
 
-/* FIXME: 
-   Check these declarations against the C/Fortran source code.
-*/
+
+/* -------------------------------------- */
+/* C code from R to be passed to FORTRAN  */
+/* -------------------------------------- */
+/* Random seed related */
+void F77_SUB(rndstart)(void) { GetRNGstate(); }
+void F77_SUB(rndend)(void) { PutRNGstate(); }
+
+/* Random number generators */
+double F77_SUB(unifrnd)(void) {
+	return unif_rand(); } /* Uniform */
+double F77_SUB(betarnd)(double *aa, double *bb){
+	return rbeta(*aa,*bb); } /* Beta */
+double F77_SUB(gammarnd)(double *a, double *scale){
+	return rgamma(*a,*scale);} /* Gamma */
+
+/* Density functions */
+double F77_SUB(betadens)(double *x, double *a, double *b, int *give_log){
+	return dbeta(*x, *a, *b, *give_log);} /* Beta */
+double F77_SUB(gammadens)(double *x, double *shape, double *scale, int *give_log){
+	return dgamma(*x, *shape, *scale, *give_log);} /* Gamma */
+
 
 /* --------------------------- */
 /* .Fortran calls */
 /* --------------------------- */
-extern void F77_NAME(linkr)(int * link, double * a, double * ylim, int * n, int * ilk, double * y, int * lk, double * gy, int * dl, double * dlink);
+extern void F77_NAME(dltest)(int * n, double * y, int * B, int * p, double * vals);
+
+extern void F77_NAME(linkr)(int * link, double * par, int * n, int * ind, double * x, double * gx, double * dlink);
 
 /* Simulating time series */
-extern void F77_NAME(simbarcr)(int * n, int * burn, double * nu, double * alpha, int * nreg, double * beta, int * p, double * phi, int * r, double * theta, double * u0, int * map, int * link, double * ah, double * xreg, int * xregar, double * yt, double * ystart, double * xstart, double * mu, double * eta,  double * error, int * escale, double * Ts, int * ns, int * seed, int * rngtype, int * rev);
-extern void F77_NAME(simbarfimar)(int * n, int * burn, double * nu, double * alpha, int * nreg, double * beta, int * p, double * phi, int * q, double * theta, double * d, int * linkg, double * xreg, int * xregar, double * yt, double * ystart, double * xstart, double * mu, double * eta, double * error, int * escale, int * ns, int * seed, int * rngtype, int * inf, int * rev);
-extern void F77_NAME(simkarfimar)(int * n, int * burn, double * nu, double * alpha, int * nreg, double * beta, int * p, double * phi, int * q, double * theta, double * d, int * linkg, double * xreg, int * xregar, double * yt, double * ystart, double * xstart, double * mu, double * eta, double * error, int * escale, int * ns, int * seed, int * rngtype, int * inf, int * rev);
-extern void F77_NAME(simgarfimar)(int * n, int * burn, double * nu, double * alpha, int * nreg, double * beta, int * p, double * phi, int * q, double * theta, double * d, int * linkg, double * xreg, int * xregar, double * yt, double * ystart, double * xstart, double * mu, double * eta, double * error, int * escale, int * ns, int * seed, int * rngtype, int * inf, int * rev);
-extern void F77_NAME(simuwarfimar)(int * n, int * burn, double * nu, double * alpha, int * nreg, double * beta, int * p, double * phi, int * q, double * theta, double * d, int * linkg, double * xreg, int * xregar, double * yt, double * ystart, double * xstart, double * mu, double * eta, double * error, int * escale, int * ns, int * seed, int * rngtype, int * inf, int * rev);
+extern void F77_NAME(simbtsr)(int * code, int * length, int * order, double* ts, double * xreg1, double * xreg2, double * tstart, double * xstart, int * link, double * lconfig, int * np, double * pdist, int * xregar, double * alpha,  double * beta, double * phi, double * theta, double * d, int * rev);
+
+extern void F77_NAME(simbarc)(int * length, int * order, double * ts, double * xreg, double * ystart, double * xstart, int * link, double * lconfig, int * map, int * xregar, double * alpha, double * beta, double * phi, double * theta, double * u0, int * rev);
 
 /* Extracting components */
-extern void F77_NAME(barcr)(int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, double * Ts, int * nnew, double * xnew, double * ynew, double * Tnew, int * link, double * ah, int * map, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * r, int * fixt, int * flagst, double * thetaT, int * fixnu, double * nu, int * fixu0, double * u0, int * llk, double * sll, int * sco, double * U, int * info, double * K);
-extern void F77_NAME(barfimar)(int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar,  int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, int * llk, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h);
-extern void F77_NAME(karfimar)(int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar,  int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, int * llk, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h);
-extern void F77_NAME(garfimar)(int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar,  int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, int * llk, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h);
-extern void F77_NAME(uwarfimar)(int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar,  int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, int * llk, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h);
+extern void F77_NAME(extractbtsr)(int * code, int * length, int * order, double * ts, double * xreg1, double * xreg2, double * tstart, double * xstart, double * xnew1, double * xnew2, double * forecast, int * link, double * lconfig, int * npar, double * par, int * xregar, int * nfix, double * alpha, int * flagsb, double * beta, int * flagsar, double * phi, int * flagsma, double * theta, double * d, int * np, double * pdist, int * extras, double * sll, double * U, double * K, int * nd, double * Dg, double * T, double * E, double * h, int * ierr);
+
+extern void F77_NAME(extractbarc)(int * length, int * order, double * ts, double * xreg,  double * ystart, double * xstart, double * xnew, double * forecast, int * link, double * lconfig, int * map, int * npar, double * par, int * xregar, int * nfix, double * alpha, int * flagsb, double * beta, int * flagsar, double * phi, int * flagst, double * theta, double * u0, int * extras, double * sll, double * U, double * K, int * ierr);
+
+extern void F77_NAME(gradient)(int * n, int * npar, int * nd, double * D, double * T, double * h, double * grad);
 
 /* Fitting parameters */
-extern void F77_NAME(optimnelderbarcr)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, double * Ts, int * nnew, double * xnew, double * ynew, double * Tnew, int * link, double * ah, int * map, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi,  int * xregar, int * r, int * fixt, int * flagst, double * thetaT, int * fixnu, double * nu, int * fixu0, double * u0, double * sll, int * sco, double * U, int * info, double * K, int * iprint, double * stopcr, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimlbfgsbbarcr)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, double * Ts, int * nnew, double * xnew, double * ynew, double * Tnew, int * link, double * ah, int * map, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi,  int * xregar, int * r, int * fixt, int * flagst, double * thetaT, int * fixnu, double * nu,  int * fixu0, double * u0, double * sll, double * U, int * info, double * K, int * iprint, double * factr, double * pgtol, int * maxit, int * neval, int * conv); 
-extern void F77_NAME(optimnelderbarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy,double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * stopcr, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimlbfgsbbarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * factr, double * pgtol, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimnelderkarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy,double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * stopcr, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimlbfgsbkarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * factr, double * pgtol, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimneldergarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy,double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * stopcr, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimlbfgsbgarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * factr, double * pgtol, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimnelderuwarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy,double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, int * sco, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * stopcr, int * maxit, int * neval, int * conv);
-extern void F77_NAME(optimlbfgsbuwarfimar)(int * npar, double * par, int * nbd, double * lower, double * upper, int * n, double * y, double * gy, double * ystart, int * nreg, double * xreg, double * xstart, double * mu, double * eta, double * error, int * escale, int * nnew, double * xnew, double * ynew, int * link, int * fixa, double * alpha, int * fixB, int * flagsb, double * beta, int * p, int * fixar, int * flagsar, double * phi, int * xregar, int * q, int * fixma, int * flagsma, double * theta, int * fixd, double * d, int * fixnu, double * nu, int * inf, int * m, double * sll, double * U, int * info, double * K, int * extra, double * Drho, double * T, double * E, double * h, int * iprint, double * factr, double * pgtol, int * maxit, int * neval, int * conv);
+extern void F77_NAME(optimbtsr)(int * method, int * code, int * length, int * order, double * ts, double * xreg1, double * xreg2, double * tstart, double * xstart, double * xnew1, double * xnew2, double * forecast, int * link, double * lconfig, int * npar, double * par, int * nbd, double * bounds, int * xregar, int * nfix, double * alpha, int * flagsb, double * beta, int * flagsar, double * phi, int * flagsma, double * theta, double * d, int * np, double * pdist, int * extras, double * sll, double * U, double * K, int * nd, double * Dg, double * T, double * E, double * h, int * cf1, int * nc2, double * cf2, int * neval, int * conv);
+
+extern void F77_NAME(optimbarc)(int * method, int * length, int * order, double * ts, double * xreg, double * ystart, double * xstart, double * xnew, double * forecast, int * link, double * lconfig, int * map, int * npar, double * par, int * nbd, double * bounds, int * xregar, int * nfix, double * alpha, int * flagsb, double * beta, int * flagsar, double * phi, int * flagsma, double * theta, double * u0, int * extras, double * sll, double * U, double * K, int * cf1, int * nc2, double * cf2, int * neval, int * conv);
 
 /* Prediction */
-extern void F77_NAME(predictbarcr)(int * n, double * y, double * gy, int * nreg, double * xreg, int * escale, double * error, double * Ts, int * nnew, double * xnew, double * ynew, double * Tnew, int * link, double * ah, int * map, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * fvbeta, int * p, int * fixar, int * flagsar, double * fvar, int * xregar, int * r, int * fixt, int * flagst, double * fvT, int * fixnu, double * nu, int * fixu0, double * u0);
-extern void F77_NAME(btsrpredictr)(int * n, double * y, double * ylower, double * yupper, double * gy, int * nreg, double * xreg, int * escale, double * error, int * nnew, double * xnew, double * ynew, int * link, int * npar, double * par, int * fixa, double * alpha, int * fixB, int * flagsb, double * fvbeta, int * p, int * fixar, int * flagsar, double * fvar, int * xregar, int * q, int * fixma, int * flagsma, double * fvma, int * fixd, double * d, int * fixnu, double * nu, int * inf);
+extern void F77_NAME(predictbtsr)(int * length, int * order, double * ts, double * xreg1, double * xreg2, double * xnew1, double * xnew2, double * forecast, int * link, double * lconfig, int * npar, double * par, int * xregar, int * nfix, double * alpha, int * flagsb, double * fvbeta, int * flagsar, double * fvar, int * flagsma, double * fvma, double * d);
+
+extern void F77_NAME(predictbarc)(int * length, int * order, double * ts, double * xreg, double * xnew, double * forecast, int * link, double * lconfig, int * map, int * npar, double * par, int * xregar,  int * nfix, double * alpha, int * flagsb, double * fvbeta, int * flagsar, double * fvar, int * flagst, double * fvT, double * u0);
+
 /* --------------------------- */
 /* end of .Fortran calls */
-/* --------------------------- */ 
+/* --------------------------- */
 
 static const R_FortranMethodDef FortranEntries[] = {
-    {"linkr",                (DL_FUNC) &F77_NAME(linkr),                10},
-		{"simbarcr",             (DL_FUNC) &F77_NAME(simbarcr),             28},
-		{"simbarfimar",          (DL_FUNC) &F77_NAME(simbarfimar),          26},
-		{"simkarfimar",          (DL_FUNC) &F77_NAME(simkarfimar),          26},
-		{"simgarfimar",          (DL_FUNC) &F77_NAME(simgarfimar),          26},
-		{"simuwarfimar",         (DL_FUNC) &F77_NAME(simuwarfimar),         26},
-		{"barcr",                (DL_FUNC) &F77_NAME(barcr),                45},
-		{"barfimar",             (DL_FUNC) &F77_NAME(barfimar),             48},
-		{"karfimar",             (DL_FUNC) &F77_NAME(karfimar),             48},
-		{"garfimar",             (DL_FUNC) &F77_NAME(garfimar),             48},
-		{"uwarfimar",            (DL_FUNC) &F77_NAME(uwarfimar),            48},
-		{"optimnelderbarcr",     (DL_FUNC) &F77_NAME(optimnelderbarcr),     52},
-		{"optimlbfgsbbarcr",     (DL_FUNC) &F77_NAME(optimlbfgsbbarcr),     52},    
-		{"optimnelderbarfimar",  (DL_FUNC) &F77_NAME(optimnelderbarfimar),  55},
-    {"optimlbfgsbbarfimar",  (DL_FUNC) &F77_NAME(optimlbfgsbbarfimar),  55},
-		{"optimnelderkarfimar",  (DL_FUNC) &F77_NAME(optimnelderkarfimar),  55},
-    {"optimlbfgsbkarfimar",  (DL_FUNC) &F77_NAME(optimlbfgsbkarfimar),  55},
-    {"optimneldergarfimar",  (DL_FUNC) &F77_NAME(optimneldergarfimar),  55},
-    {"optimlbfgsbgarfimar",  (DL_FUNC) &F77_NAME(optimlbfgsbgarfimar),  55},
-    {"optimnelderuwarfimar", (DL_FUNC) &F77_NAME(optimnelderuwarfimar), 55},
-    {"optimlbfgsbuwarfimar", (DL_FUNC) &F77_NAME(optimlbfgsbuwarfimar), 55},
-    {"predictbarcr",         (DL_FUNC) &F77_NAME(predictbarcr),         35},
-    {"btsrpredictr",         (DL_FUNC) &F77_NAME(btsrpredictr),         34},    
+    {"dltest",           (DL_FUNC) &F77_NAME(dltest),                5},
+    {"extractbtsr",      (DL_FUNC) &F77_NAME(extractbtsr),          37},
+    {"extractbarc",      (DL_FUNC) &F77_NAME(extractbarc),          28},
+		{"gradient",         (DL_FUNC) &F77_NAME(gradient),              7},
+		{"linkr",            (DL_FUNC) &F77_NAME(linkr),                 7},
+		{"optimbtsr",        (DL_FUNC) &F77_NAME(optimbtsr),            44},
+		{"optimbarc",        (DL_FUNC) &F77_NAME(optimbarc),            35},
+		{"predictbtsr",      (DL_FUNC) &F77_NAME(predictbtsr),          22},
+		{"predictbarc",      (DL_FUNC) &F77_NAME(predictbarc),          21},
+		{"simbtsr",          (DL_FUNC) &F77_NAME(simbtsr),              19},
+		{"simbarc",          (DL_FUNC) &F77_NAME(simbarc),              16},
     {NULL, NULL, 0}
 };
 
@@ -77,3 +80,5 @@ void R_init_BTSR(DllInfo *dll)
     R_registerRoutines(dll, NULL, NULL, FortranEntries, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
+
+

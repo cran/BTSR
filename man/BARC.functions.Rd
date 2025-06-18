@@ -7,456 +7,485 @@
 \alias{BARC.fit}
 \title{Functions to simulate, extract components and fit BARC models}
 \usage{
-BARC.sim(n = 1, burn = 0, xreg = NULL, map = 4, coefs = list(alpha =
-  0, beta = NULL, phi = NULL, theta = 0.5, nu = 20, u0 = pi/4),
-  y.start = NULL, xreg.start = NULL, xregar = TRUE, error.scale = 0,
-  complete = FALSE, linkg = c("linear", "linear"), linkh = "linear",
-  ctt.h = 1, seed = NULL, rngtype = 2, debug = FALSE)
+BARC.sim(n = 1, burn = 0, y.start = NULL, xreg = NULL,
+  xreg.start = NULL, xregar = TRUE, coefs = NULL, map = 4,
+  error.scale = 0, linkg = "linear", configs.linkg = NULL,
+  linkh = "linear", configs.linkh = list(ctt = 1, power = 1),
+  complete = FALSE, debug = FALSE)
 
-BARC.extract(yt, xreg = NULL, nnew = 0, xnew = NULL, p, r,
-  coefs = list(), lags = list(), fixed.values = list(),
-  fixed.lags = list(), y.start = NULL, xreg.start = NULL,
-  xregar = TRUE, error.scale = 0, map = 4, linkg = c("linear",
-  "linear"), linkh = "linear", ctt.h = 1, llk = TRUE, sco = FALSE,
+BARC.extract(yt, y.start = NULL, xreg = NULL, xreg.start = NULL,
+  xnew = NULL, xregar = TRUE, nnew = 0, p = NULL, coefs = NULL,
+  lags = NULL, fixed.values = NULL, fixed.lags = NULL, error.scale = 0,
+  map = 4, linkg = "linear", configs.linkg = NULL, linkh = "linear",
+  configs.linkh = list(ctt = 1, power = 1), llk = TRUE, sco = FALSE,
   info = FALSE, debug = FALSE)
 
-BARC.fit(yt, xreg = NULL, nnew = 0, xnew = NULL, p = 0, r = 1,
-  start = list(), lags = list(), fixed.values = list(),
-  ignore.start = FALSE, fixed.lags = list(), lower = list(nu = 0, u0 =
-  0), upper = list(nu = Inf, u0 = 1), map = 4, linkg = c("linear",
-  "linear"), linkh = "linear", ctt.h = 1, sco = FALSE, info = FALSE,
-  xregar = TRUE, y.start = NULL, xreg.start = NULL, error.scale = 0,
-  control = list(), report = TRUE, debug = FALSE, ...)
+BARC.fit(yt, y.start = NULL, xreg = NULL, xreg.start = NULL,
+  xregar = TRUE, xnew = NULL, nnew = 0, p = NULL,
+  ignore.start = FALSE, start = NULL, lags = NULL, fixed.values = NULL,
+  fixed.lags = NULL, lower = NULL, upper = NULL, map = 4,
+  linkg = "linear", configs.linkg = NULL, linkh = "linear",
+  configs.linkh = list(ctt = 1, power = 1), sco = FALSE, info = FALSE,
+  error.scale = 0, control = NULL, report = TRUE, debug = FALSE, ...)
 }
 \arguments{
-\item{n}{a strictly positive integer. The sample size of yt (after burn-in).
-Default is 1.}
+\item{n}{a strictly positive integer. The sample size of \code{yt} (after
+burn-in). Default is \code{n = 1}.}
 
-\item{burn}{a non-negative integer. length of "burn-in" period. Default is 0.}
+\item{burn}{a non-negative integer. length of "burn-in" period. Default is
+\code{burn = 0}.}
 
-\item{xreg}{optionally, a vector or matrix of external regressors.
-For simulation purposes, the length of xreg must be \code{n+burn}.
-Default is \code{NULL}. For extraction or fitting purposes, the length
-of \code{xreg} must be the same as the length of the observed time series
-\eqn{y_t}.}
+\item{y.start}{optionally, an initial value for  \eqn{Y_t} (to be used in the
+recursions). Default is \code{y.start = NULL}, in which case, the recursion
+assumes that \eqn{Y_t = g_{12}^{-1}(0)}, for \eqn{t < 1}. Only relevant if
+\eqn{p > 0}.}
 
-\item{map}{a non-negative integer from 1 to 5 corresponding to the map function.
-Default is 4. See \sQuote{The map function}.}
+\item{xreg}{optionally, a vector or matrix of external regressors. Default
+is \code{xreg = NULL}. For simulation purposes, the length of \code{xreg} must be
+equal to \code{n + burn}. For extraction or fitting purposes, the length of
+\code{xreg} must be the same as the length of the observed time series
+\eqn{Y_t}.}
 
-\item{coefs}{a list with the coefficients of the model. An empty list will result
-in an error. The arguments that can be passed through this list are:
+\item{xreg.start}{optionally, a vector of initial value for
+\eqn{\boldsymbol{X}_t} (to be used in the recursions). Default is
+\code{xreg.start = NULL}, in which case, the average of the first \eqn{p} values
+is used, that is, the recursion assumes that  \eqn{\boldsymbol{X}_t =
+  p^{-1}\sum_{k = 1}^p  \boldsymbol{X}_k}, for \eqn{t < 1}. Only relevant if
+\code{xregar = TRUE} and  \eqn{p > 0}.}
+
+\item{xregar}{logical; indicates whether \code{xreg} should be included in the AR
+recursion of the model. Default is \code{xregar = TRUE}. Only relevant if \code{xreg}
+is included and \eqn{p > 0}. See the Section \sQuote{The BTSR structure} in
+\link{btsr-package} for details.}
+
+\item{coefs}{a list with the coefficients of the model. An empty list will
+result in an error. The arguments that can be passed through this list are
 \itemize{
-\item \code{alpha} optionally, a numeric value corresponding to the intercept.
-If the argument is missing, it will be treated as zero. See
-\sQuote{The BTSR structure} in \code{\link{btsr.functions}}.
+\item \code{alpha}: optionally, a numeric value corresponding to the intercept.
+If the argument is missing, it will be treated as zero.
 
-\item \code{beta} optionally, a vector of coefficients corresponding to the
-regressors in \code{xreg}. If \code{xreg} is provided but \code{beta} is
-missing in the \code{coefs} list, an error message is issued.
+\item \code{beta}: optionally, a vector of coefficients corresponding to the
+regressors in \code{xreg}. For simulation purposes, if \code{xreg} is provided but
+\code{coefs} does not have a \code{beta} argument, an error message is issued. The
+extracting function also verify the \code{fixed.values} list before issuing an
+error message.
 
-\item \code{phi} optionally, for the simulation function this must be a vector
-of size \eqn{p}, corresponding to the autoregressive coefficients
-(including the ones that are zero), where \eqn{p} is the AR order. For
-the extraction and fitting functions, this is a vector with the non-fixed
+\item\code{phi}: optionally, for the simulation function this must be a vector
+of size, \eqn{p} corresponding to the autoregressive coefficients
+(including the ones that are zero), where \eqn{p} is the AR order. For the
+extraction and fitting functions, this is a vector with the non-fixed
 values in the vector of autoregressive coefficients.
 
-\item \code{theta} the parameter (or vector of parameters) corresponding
-to the map function. If \code{map = 5} this value is ignored. For simulation,
-purposes, the default is \code{map = 4} and \code{theta = 0.5}.
+\item \code{theta} the parameter (or vector of parameters) corresponding to the
+map function. If \code{map = 5} this value is ignored. For simulation,
+purposes, the default is \code{map = 4} and \code{theta = 0.5}. \strong{Note:} Do
+not confuse \code{theta} from a BARC model with the moving average term in the
+general BTSR class of models
 
-\item \code{nu} the dispersion parameter. If missing, an error message is issued.
+\item \code{nu} the dispersion parameter. If missing, an error message is
+issued.
 
-\item \code{u0} a numeric value in the interval \eqn{(0,1)}, corresponding
-to the value of the random variable \eqn{U_0}. For simulation purposes, the
+\item \code{u0} a numeric value in the interval \eqn{(0,1)}, corresponding to
+the value of the random variable \eqn{U_0}. For simulation purposes, the
 default is \code{u0 = pi/4}.
+}
+For simulation purposes, an empty list will result in an error message. For
+extraction purposes, an error message will be issued if both \code{coefs} and
+\code{fixed.values} are empty. The argument \code{coefs} is not used when fitting a
+model. Missing parameters are treated as zero.}
 
-}}
+\item{map}{a non-negative integer from 1 to 5 corresponding to the map
+function. Default is \code{map = 4}. See the Section \link[=arguments.map]{The map function}.}
 
-\item{y.start}{optionally, a initial value for yt (to be used
-in the recursions). Default is \code{NULL}, in which case, the recursion assumes
-that \eqn{g_2(y_t) = 0}, for \eqn{t < 1}.}
+\item{error.scale}{the scale for the error term. Default is \code{error.scale = 0}
+(data scale).}
 
-\item{xreg.start}{optionally, a vector of initial value for xreg
-(to be used in the recursions). Default is \code{NULL}, in which case, the
-recursion assumes that \eqn{X_t = 0}, for \eqn{t < 1}. If \code{xregar = FALSE}
-this argument is ignored.}
+\item{linkg}{character or a two character vector indicating which links must
+be used in the model.  See the Section \sQuote{The BTSR structure} in
+\link{btsr-package} for details and \link{link.btsr} for valid links. If only one
+value is provided, the same link is used for \eqn{\mu_t} and for \eqn{Y_t}
+in the AR part of the model.  Default is \code{linkg = "linear"}.}
 
-\item{xregar}{logical; indicates if xreg is to be included in the
-AR part of the model.  See \sQuote{The BTSR structure}. Default is \code{TRUE}.}
-
-\item{error.scale}{the scale for the error term. See \sQuote{The BTSR structure}
-in \code{\link{btsr.functions}}. Default is 0.}
-
-\item{complete}{logical; if \code{FALSE} the function returns only the simulated
-time series yt, otherwise, additional time series are provided.
-Default is \code{FALSE}}
-
-\item{linkg}{character or a two character vector indicating which
-links must be used in the model.  See \sQuote{The BTSR structure}
-in \code{\link{btsr.functions}} for details and \code{\link{link.btsr}}
-for valid links. If only one value is provided, the same link is used
-for \eqn{mu_t} and for \eqn{y_t} in the AR part of the model.
-Default is \code{c("linear", "linear")}}
+\item{configs.linkg}{a list with two elements, \code{ctt} and \code{power}, which
+define the constant \eqn{a} and the exponent \eqn{b} in the link function
+\eqn{g(x) = a x^b}. Each element can be a single numeric value (applied
+uniformly across all linear links), a numeric vector of length 2, or a
+named list with entries \code{g11} and \code{g12}. This argument is only used when
+the link function is \code{"linear"} or \code{"polynomial"}. The default is
+\code{configs.linkg = NULL}, in which case the function internally assumes
+\code{configs.linkg = list(ctt = list(g11 = 1, g12 = 1), power = list(g11 = 1, g12 = 1))}.}
 
 \item{linkh}{a character indicating which link must be associated to the
-the chaotic process.  See \sQuote{The BTSR structure}
-in \code{\link{btsr.functions}} for details and \code{\link{link.btsr}}
-for valid links. Default is \code{"linear"}.}
+chaotic process.  See the Section \sQuote{The BTSR structure} in
+\link{btsr-package} for details and \link{link.btsr} for valid links. Default is
+\code{linkh = "linear"}.}
 
-\item{ctt.h}{numeric; the constant to be associated to the link \eqn{h},
-when \code{linkh = "linear"}. Default is 1.}
+\item{configs.linkh}{a list with extra configurations for the link \eqn{h}.
+For now, only used if \code{linkh = "linear"} or \code{"polynomial"}. Default is
+\code{configs.linkh = list(ctt = 1, power = 1)}.}
 
-\item{seed}{optionally, an integer which gives the value of the fixed
-seed to be used by the random number generator. If missing, a random integer
-is chosen uniformly from 1,000 to 10,000.}
+\item{complete}{logical; if FALSE returns only \code{yt}, else returns additional
+components. Default is \code{complete = FALSE}.}
 
-\item{rngtype}{optionally, an integer indicating which random number generator
-is to be used. Default is 2. See \sQuote{Common Arguments}
-in \code{\link{btsr.functions}}.}
+\item{debug}{logical, if \code{TRUE} the output from Fortran is return (for
+debugging purposes). Default is \code{debug = FALSE}.}
 
-\item{debug}{logical, if \code{TRUE} the output from FORTRAN is return (for
-debuggin purposes).  Default is \code{FALSE} for all models.}
+\item{yt}{a numeric vector with the observed time series. If missing, an
+error message is issued.}
 
-\item{yt}{a numeric vector with the observed time series. If missing, an error
-message is issued.}
+\item{xnew}{a vector or matrix, with \code{nnew} observations of the regressors
+observed/predicted values corresponding to the period of out-of-sample
+forecast. Default is \code{xreg = NULL}. If \code{xreg = NULL} or \code{nnew = 0}, \code{xnew}
+is ignored. If \code{nnew > 0} and the number of regressors in \code{xnew} does not
+match \code{xreg} an error message is issued.}
 
-\item{nnew}{optionally, the number of out-of sample predicted values required.
-Default is 0.}
+\item{nnew}{optionally, the number of out-of sample predicted values
+required. Default is \code{nnew = 0}.}
 
-\item{xnew}{a vector or matrix, with \code{nnew} observations of the
-regressors observed/predicted values corresponding to the period of
-out-of-sample forecast. If \code{xreg = NULL}, \code{xnew} is ignored.}
+\item{p}{optionally, a non-negative integer. The order of the AR polynomial.
+Default is \code{p = NULL}, in which case the value of \code{p} is computed
+internally, based on the size of the argument \code{phi} in the lists of
+coefficients (or staring values), fixed lags, and fixed values. For fitting
+purposes, if \code{p} and \code{start} are both \code{NULL}, an error message is issued.}
 
-\item{p}{a non-negative integer. The order of AR polynomial.
-If missing, the value of \code{p} is calculated from length(coefs$phi)
-and length(fixed.values$phi). For fitting, the default is 0.}
-
-\item{r}{a non-negative integer. The size of the vector theta.
-If missing, the value of \code{t} is calculated from length(coefs$theta)
-and length(fixed.values$theta). For fitting, the default is 1.}
-
-\item{lags}{optionally, a list with the lags that the values in \code{coefs} correspond to.
-The names of the entries in this list must match the ones in \code{coefs}.
-For one dimensional coefficients, the \code{lag} is obviously always 1 and can
-be suppressed. An empty list indicates that either the argument \code{fixed.lags}
-is provided or all lags must be used.}
+\item{lags}{optionally, a list with the lags that the values in \code{coefs}
+correspond to. The names of the entries in this list must match the ones in
+\code{coefs} (or \code{start}). For one dimensional coefficients, the \code{lag} is
+obviously always 1 and can be suppressed. The default is \code{lags = NULL}, in
+which the \code{lags} are computed from the \code{fixed.lags} argument (if provided).
+If both, \code{lags} and \code{fixed.lags} are missing, it is assumed that all lags
+must be used. The arguments \code{lags} and \code{fixed.lags} are complementary.
+Either suffices, or mix them (e.g., \code{lags} for some parameters,
+\code{fixed.lags} for others).}
 
 \item{fixed.values}{optionally, a list with the values of the coefficients
-that are fixed. By default, if a given vector (such as the vector of AR coefficients)
-has fixed values and the corresponding entry in this list is empty, the fixed values
-are set as zero. The names of the entries in this list must match the ones
-in \code{coefs}.}
+that are fixed. The default is \code{fixed.lags = NULL}. By default, if a given
+vector (such as the vector of AR coefficients) has fixed values and the
+corresponding entry in this list is empty, the fixed values are set as
+zero. The names of the entries in this list must match the ones in \code{coefs}
+(or \code{start}).}
 
-\item{fixed.lags}{optionally, a list with the lags that the fixed values
-in \code{fixed.values} correspond to. The names of the entries in this list must
-match the ones in \code{fixed.values}. ##' For one dimensional coefficients, the
-\code{lag} is obviously always 1 and can be suppressed. If an empty list is provided
-and the model has fixed lags, the argument \code{lags} is used as reference.}
+\item{fixed.lags}{optionally, a list with the lags that the fixed values in
+\code{fixed.values} correspond to. The names of the entries in this list must
+match the ones in \code{fixed.values}. For one dimensional coefficients, the
+\code{lag} is obviously always 1 and can be suppressed. If an empty list is
+provided and the model has fixed lags, the argument \code{lags} is used as
+reference.}
 
-\item{llk}{logical, if \code{TRUE} the value of the log-likelihood function
-is returned. Default is \code{TRUE}.}
+\item{llk}{logical; indicates whether the value of the log-likelihood
+function should be returned. Default is \code{llk = TRUE}.}
 
-\item{sco}{logical, if \code{TRUE} the score vector is returned.
-Default is \code{FALSE}.}
+\item{sco}{logical; indicates whether the score vector should be returned.
+Default is \code{sco = FALSE}. For now, the score vector is computed using
+numerical derivatives.}
 
-\item{info}{logical, if \code{TRUE} the information matrix is returned.
-Default is \code{FALSE}. For the fitting function, \code{info} is automatically
-set to \code{TRUE} when \code{report = TRUE}.}
+\item{info}{logical; indicates whether the information matrix should be
+returned. Default is \code{info = FALSE}. For the fitting function, \code{info} is
+automatically set to \code{TRUE} when \code{report = TRUE}.  For now, the information
+matrix is computed using numerical derivatives.}
+
+\item{ignore.start}{logical; indicates whether the argument \code{start} should be
+ignored. If starting values are not provided, the function uses the default
+values and \code{ignore.start} is ignored. In case starting values are provided
+and \code{ignore.start = TRUE}, those starting values are ignored and
+recalculated. The default is \code{ignore.start = FALSE}.}
 
 \item{start}{a list with the starting values for the non-fixed coefficients
-of the model. If an empty list is provided, the function \code{\link{coefs.start}}
-is used to obtain starting values for the parameters.}
+of the model. The default is \code{start = NULL}, in which case the function
+\link{coefs.start} is used internally to obtain starting values for the
+parameters.}
 
-\item{ignore.start}{logical,  if starting values are not provided, the
-function uses the default values and \code{ignore.start} is ignored.
-In case starting values are provided and \code{ignore.start = TRUE}, those
-starting values are ignored and recalculated. The default is \code{FALSE}.}
-
-\item{lower}{optionally, list with the lower bounds for the
-parameters. The names of the entries in these lists must match the ones
-in \code{start}. The default is to assume that the parameters have no lower
-bound except for \code{nu}, for which de default is 0. Only the bounds for
+\item{lower}{optionally, list with the lower bounds for the parameters. The
+names of the entries in these lists must match the ones in \code{start}. Default
+is \code{lower = NULL}. The default is to assume that the parameters have no
+lower bound except for \code{nu}, for which de default is 0. Only the bounds for
 bounded parameters need to be specified.}
 
-\item{upper}{optionally, list with the upper bounds for the
-parameters. The names of the entries in these lists must match the ones
-in \code{start}. The default is to assume that the parameters have no upper
-bound. Only the bounds for bounded parameters need to be specified.}
+\item{upper}{optionally, list with the upper bounds for the parameters. The
+names of the entries in these lists must match the ones in \code{start}. Default
+is \code{upper = NULL}.  The default is to assume that the parameters have no
+upper bound. Only the bounds for bounded parameters need to be specified.}
 
-\item{control}{a list with configurations to be passed to the
-optimization subroutines. Missing arguments will receive default values. See
-\cite{\link{fit.control}}.}
+\item{control}{a list with configurations to be passed to the optimization
+subroutines. Default is \code{control = NULL}. Missing arguments will receive
+default values. For details, see \link{fit.control}.}
 
-\item{report}{logical, if \code{TRUE} the summary from model estimation is
-printed and \code{info} is automatically set to \code{TRUE}. Default is \code{TRUE}.}
+\item{report}{logical; indicates whether the summary from the fitted model
+should be be printed. Default is \code{report = TRUE}, in which case \code{info} is
+automatically set to \code{TRUE}.}
 
-\item{...}{further arguments passed to the internal functions.}
+\item{...}{further arguments passed to the internal functions. See, for
+instance, \link{summary.btsr} for details.}
 }
 \value{
-The function \code{BARC.sim} returns the simulated time series yt  by default.
-If \code{complete = TRUE}, a list with the following components
-is returned instead:
+By default, the function \code{BARC.sim} returns the simulated time series \code{yt}.
+If \code{complete = TRUE}, it returns a list with the following components
 \itemize{
 \item \code{model}: string with the text \code{"BARC"}
 
-\item \code{yt}: the simulated time series
+\item \code{yt}: the simulated time series \eqn{Y_t}
 
-\item \code{mut}: the conditional mean
+\item \code{mut}: the conditional mean \eqn{\mu_t}
 
-\item \code{etat}: the linear predictor \eqn{g(\mu_t)}
+\item \code{etat}: the linear predictor \eqn{\eta_t = g_{11}(\mu_t)}
 
-\item \code{error}: the error term \eqn{r_t}
+\item \code{u0}: the starting values of \eqn{U_0}
 
-\item \code{xreg}: the regressors (if included in the model).
+\item \code{Ts}: the chaotic process \eqn{T^t(U_0)}
 
-\item \code{debug}: the output from FORTRAN (if requested).
+\item \code{error}: the error term \eqn{e_{1t}}
 
+\item \code{out.Fortran}: the output from FORTRAN (if requested).
 }
 
 The function \code{BARC.extract} returns a list with the following components.
 
 \itemize{
-\item \code{model}: string with the text \code{"BARC"}.
+\item \code{model}: string with the text \code{"BARC"}
 
-\item \code{coefs}: the coefficients of the model passed through the
-\code{coefs} argument.
+\item \code{yt}: the observed time series \eqn{Y_t}
 
-\item \code{yt}: the observed time series.
+\item \code{TS}: the chaotic process \eqn{T^t(U_0)}.
 
-\item \code{gyt}: the transformed time series \eqn{g_2(y_t)}.
+\item \code{mut}: the conditional mean \eqn{\mu_t}
 
-\item \code{mut}: the conditional mean.
+\item \code{etat}: the linear predictor \eqn{\eta_t = g_{11}(\mu_t)}
 
-\item \code{etat}: the linear predictor \eqn{g_1(\mu_t)}.
+\item \code{error}: the error term \eqn{e_{1t}}
 
-\item \code{error}: the error term \eqn{r_t}.
+\item \code{forecast}: the out-of-sample forecast  (if requested)
 
-\item \code{xreg}: the regressors (if included in the model).
+\item \code{xnew}: the out-of-sample values of \code{xreg} provided by the user (only
+present if the model includes regressors and forecast is requested)
 
-\item \code{TS}: the chaotic process \eqn{T^t(u0)}.
+\item \code{sll}: the sum of the conditional log-likelihood (if requested)
 
-\item \code{sll}: the sum of the conditional log-likelihood (if requested).
+\item \code{score}: the score vector  (if requested)
 
-\item \code{sco}: the score vector  (if requested).
+\item \code{info.Matrix.}: the score vector  (if requested)
 
-\item \code{info}: the information matrix  (if requested).
-
-\item \code{Drho}, \code{T}, \code{E}, \code{h}: additional matrices and vectors
-used to calculate the score vector and the information matrix.  (if requested).
-
-\item \code{yt.new}: the out-of-sample forecast  (if requested).
-
-\item \code{Ts.new}: the out-of-sample forecast for the chaotic
-process (if requested).
-
-\item \code{out.Fortran}: FORTRAN output  (if requested).
+\item \code{out.Fortran}: FORTRAN output  (if requested)
 }
 
-The function \code{btsr.fit} returns a list with the following components.
-Each particular model can have additional components in this list.
+The function \code{BARC.fit} returns a list with the following components.
 
 \itemize{
 \item \code{model}: string with the text \code{"BARC"}
 
-\item \code{convergence}: An integer code. 0 indicates successful completion.
-The error codes depend on the algorithm used.
-
-\item \code{message}: A character string giving any additional information
-returned by the optimizer, or NULL.
-
-\item \code{counts}: an integer giving the number of function evaluations.
-
-\item \code{control}: a list of control parameters.
-
-\item \code{start}: the starting values used by the algorithm.
-
-\item \code{coefficients}: 	The best set of parameters found.
+\item \code{call}: string with a complete description of the model, including
+the AR and MA order.
 
 \item \code{n}: the sample size used for estimation.
 
-\item \code{series}: the observed time series
+\item \code{series}: the observed time series \eqn{Y_t}
 
-\item \code{gyt}: the transformed time series \eqn{g_2(y_t)}
+\item \code{gyt}: a vector or a matrix with the transformed time series
+\eqn{g_{11}(Y_t)} and \eqn{g_{12}(Y_t)}. Only returns a matrix if the links
+\eqn{g_{11}} and \eqn{g_{12}} are not the same.
 
-\item \code{fitted.values}: the conditional mean, which corresponds to
-the in-sample forecast, also denoted fitted values
+\item \code{xreg}: a vector or matrix of regressors \eqn{\boldsymbol{X}_t} (if
+included in the model).
 
-\item \code{etat}: the linear predictor \eqn{g_1(\mu_t)}
+\item \code{control}: a list of control parameters.
 
-\item \code{error.scale}: the scale for the error term.
+\item \code{convergence}: An integer code. 0 indicates successful completion. The
+error codes depend on the algorithm used.
 
-\item \code{error}: the error term \eqn{r_t}
+\item \code{message}: A character string giving any additional information
+returned by the optimizer (if any), or \code{NULL}.
 
-\item \code{residual}: the observed minus the fitted values. The same as
-the \code{error} term if \code{error.scale = 0}.
+\item \code{counts}: an integer giving the number of function evaluations.
 
-\item \code{forecast}: the out-of-sample forecast for \eqn{y_t} (if requested).
+\item \code{start}: the starting values used by the algorithm.
 
-\item \code{Ts.forecas}: the out-of-sample forecast for \eqn{T^t(u_0)}
-(if requested).
+\item \code{coefficients}: The best set of parameters found.
 
-\item \code{xnew}: the observations of the regressors observed/predicted
-values corresponding to the period of out-of-sample forecast.
-Only inlcudes if \code{xreg} is not \code{NULL} and \code{nnew > 0}.
+\item \code{fitted.values}: the conditional time series \eqn{\mu_t} and the
+chaotic process \eqn{T^t(U_0)}, which corresponds to the in-sample forecast,
+also denoted fitted values.
+
+\item \code{etat}: the linear predictor \eqn{\eta_{1t} = g_{11}(\mu_t)}
+
+\item \code{error}: the error term \eqn{e_{1t}}
+
+\item \code{residual}: the observed values \eqn{Y_t} minus the fitted values
+\eqn{\mu_t}. The same as the \code{error} term if \code{error.scale = 0}.
+
+\item \code{forecast}: a matrix with the out-of-sample forecast (if requested)
+for \eqn{\mu_t} and \eqn{\eta_{1t}}
+
+\item \code{xnew}: the observations of the regressors observed/predicted values
+corresponding to the period of out-of-sample forecast. Only included if
+\code{xreg} is not \code{NULL} and \code{nnew > 0}.
 
 \item \code{sll}: the sum of the conditional log-likelihood (if requested)
 
-\item \code{info.Matrix}: the information matrix  (if requested)
+\item \code{score}: the score vector (if requested)
 
-\item \code{configs}: a list with the configurations adopted to fit the model.
-This information is used by the prediction function.
+\item \code{info.Matrix}: the information matrix (if requested)
 
-\item \code{out.Fortran}: FORTRAN output  (if requested)
+\item \code{link}: the codes for the link functions (for summary purposes)
 
-\item \code{call}: a string with the description of the fitted model.
+\item \code{configs}: a list with the configurations passed to FORTRAN to fit the
+model. This information is used by the prediction function.
 
+\item \code{out.Fortran}: FORTRAN output  (if requested).
 }
 }
 \description{
-These functions can be used to simulate, extract components
-and fit any model of the class \code{barc}. A model with
-class \code{barc} is a special case of a model with class \code{btsr} .
-See \sQuote{The BTSR structure} in \code{\link{BARC.functions}} for
-more details on the general structure. See \sQuote{Details}.
+These functions can be used to simulate, extract components and fit any model
+of the class \code{barc}. A model with class \code{barc} is a special case of a model
+with class \code{btsr}. See the Section \sQuote{The BTSR structure} in
+\link{btsr-package} for more details on the general structure. See also
+\sQuote{Details} below.
 }
 \details{
-Neither the beta regression or an i.i.d. sample
-from a beta distribution can be obtained as special cases of the
-\eqn{\beta}ARC model since the term \eqn{h(T(U_0))} is always present
+\subsection{Sim, Extract and Fit functions}{
 
-The model from Pumi et al. (2021) is obtained by setting
-\code{xregar = TRUE} (so that the regressors are included in the AR
-part of the model) and using the same link for \eqn{y_t} and \eqn{\mu_t}.
+The function \code{BARC.sim} generates a random sample from a BARC(\eqn{p})
+model.
 
-The function \code{BARC.sim} generates a random sample from a
-\eqn{\beta}ARC(p) model.
+The function \code{BARC.extract} allows the user to extract the components
+\eqn{Y_t}, \eqn{\mu_t},  \eqn{\eta_t = g(\mu_t)}, \eqn{e_t},  \eqn{T^t(U_0)},
+the log-likelihood, the score vector and the information matrix associated to
+a given set of parameters. This function can be used by any user to create an
+objective function that can be passed to optimization algorithms not
+available in the BTSR Package.
 
-The function \code{BARC.extract} allows the user to extract the
-components \eqn{y_t}, \eqn{\mu_t},  \eqn{\eta_t = g(\mu_t)}, \eqn{r_t},
-\eqn{T^t(u_0)}, the log-likelihood, and the vectors and matrices used to
-calculate the score vector and the information matrix associated to a given
-set of parameters.
-
-This function can be used by any user to create an objective function
-that can be passed to optimization functions not available in BTSR Package.
-At this point, there is no other use for which this function was intended.
-
-The function \code{BARC.fit} fits a BARC model to a given univariate time
-series. For now, available optimization algorithms are \code{"L-BFGS-B"} and
+The function \code{BARC.fit} fits a BARC model to a given univariate time series.
+For now, available optimization algorithms are \code{"L-BFGS-B"} and
 \code{"Nelder-Mead"}. Both methods accept bounds for the parameters. For
 \code{"Nelder-Mead"}, bounds are set via parameter transformation.
 }
-\section{The map function}{
-The map function \eqn{T:[0,1] \to [0,1]} is a dynamical system, i.e.,
-a function, potentially depending on a \eqn{r}-dimensional vector of
-parameters \eqn{\theta}. Available choices are
-\itemize{
-\item \code{map = 1}, \eqn{\theta = k}, for \eqn{k} integer greater
-or equal to 2.
 
-\deqn{T(u) = (ku)(mod 1)}
+\subsection{Particular cases}{
+
+Neither the beta regression or an i.i.d. sample from a beta distribution can
+be obtained as special cases of the BARC model since the term \eqn{h(T(U_0))}
+is always present.
+
+The model from \insertCite{pumi2021;textual}{BTSR} is obtained by setting
+\code{xregar = TRUE} (so that the regressors are included in the AR part of the
+model) and using the same link for \eqn{Y_t} and \eqn{\mu_t}.
+}
+}
+\section{The map function}{
+The map function \eqn{T:[0,1] \to [0,1]} in BARC models is a dynamical
+system, i.e., a function, potentially depending on a \eqn{r}-dimensional
+vector of parameters \eqn{\theta}. As for today, for all implemented maps,
+\eqn{r = 1}.
+
+Available choices are
+\itemize{
+\item \code{map = 1}, \eqn{\theta = k}, for \eqn{k} integer greater or equal to 2.
+\deqn{T(u) = (ku)(\text{mod } 1)}
 
 \item \code{map = 2}, \eqn{0 \le \theta \le 1}
-
-\deqn{T(u) = \frac{u}{\theta}I_( u < \theta) +
-          \theta\frac{(u - \theta)}{(1 - \theta)}I(u \ge \theta)}
+\deqn{T(u) = \dfrac{u}{\theta}I( u < \theta) +
+  \theta\dfrac{(u - \theta)}{(1 - \theta)}I(u \ge \theta)}
 
 \item \code{map = 3} (logistic map), \eqn{ 0 \le \theta \le 4},
-
 \deqn{T(u) = \theta(1-\theta)}
 
 \item \code{map = 4} (Manneville-Pomeau map), \eqn{0 < \theta < 1}
-
-\deqn{T(u) = (u + u^{1+\theta})(mod 1)}
+\deqn{T(u) = (u + u^{1+\theta})(\text{mod } 1)}
 
 \item \code{map = 5} (Lasota-Mackey's map),
-
-\deqn{T(u) = \frac{u}{(1 - u)}I(u \le 0.5) + (2u - 1)I(u > 0.5)}
+\deqn{T(u) = \dfrac{u}{(1 - u)}I(u \le 0.5) + (2u - 1)I(u > 0.5)}
 }
 }
 
 \examples{
-m1 <- BARC.sim(linkg = "linear", linkh = "linear",
-              n = 100, seed = 2021, complete = TRUE, ctt.h = 0.6,
-             coefs = list(nu = 15, theta = 0.85, u0 = pi/4))
+\donttest{
+
+#########################################################################
+#
+#   Example of usage of BARC.sim, BARC.extract and BARC.fit
+#
+#########################################################################
+
+#------------------------------------------------------------
+# Generating a sample from a BARC model
+#------------------------------------------------------------
+set.seed(1234)
+m1 <- BARC.sim(
+  coefs = list(nu = 15, theta = 0.85, u0 = pi / 4),
+  linkg = "linear",
+  linkh = "linear",
+  configs.linkh = list(ctt = 0.6),
+  n = 100,
+  complete = TRUE
+)
 
 plot.ts(m1$yt)
 lines(m1$mut, col = "red")
 
- #------------------------------------------------------------
- # Generating a sample from a BARC model
- #------------------------------------------------------------
+#------------------------------------------------------------
+#  Extracting the conditional time series given yt and
+#  a set of parameters
+#------------------------------------------------------------
 
- m1 <- BARC.sim(linkg = "linear", linkh = "linear",
-               n = 100, seed = 2021, complete = TRUE, ctt.h = 0.6,
-               coefs = list(nu = 15, theta = 0.85, u0 = pi/4))
+e1 <- BARC.extract(
+  yt = m1$yt,
+  map = 4,
+  coefs = list(nu = 15, theta = 0.85),
+  fixed.values = list(u0 = pi / 4),
+  linkg = "linear",
+  linkh = "linear",
+  configs.linkh = list(ctt = 0.6),
+  llk = TRUE,
+  sco = TRUE,
+  info = TRUE
+)
 
- #------------------------------------------------------------
- #  Extracting the conditional time series given yt and
- #  a set of parameters
- #------------------------------------------------------------
+#----------------------------------------------------
+# comparing the simulated and the extracted values
+#----------------------------------------------------
+cbind(head(m1$mut), head(e1$mut))
 
-  e1 = BARC.extract(yt = m1$yt, map = 4, ctt.h = 0.6,
-                    coefs = list(nu = 15, theta = 0.85),
-                    fixed.values = list(u0 = pi/4),
-                    linkg = "linear", linkh = "linear", llk = TRUE,
-                    sco = TRUE, info = TRUE)
+#---------------------------------------------------------
+# the log-likelihood, score vector and information matrix
+# score vector and information matrix are obtained
+# numerically.
+#---------------------------------------------------------
+e1$sll
+e1$score
+e1$info.Matrix
 
- #----------------------------------------------------
- # comparing the simulated and the extracted values
- #----------------------------------------------------
- cbind(head(m1$mut), head(e1$mut))
+#------------------------------------------------------------
+#  Fitting a BARC model. Assuming only alpha fixed.
+#------------------------------------------------------------
+f1 <- BARC.fit(
+  yt = m1$yt,
+  map = 4,
+  configs.linkh = list(ctt = 0.6),
+  start = list(nu = 10, theta = 0.6, u0 = 0.5),
+  lower = list(nu = 0, theta = 0, u0 = 0),
+  upper = list(theta = 1, u0 = 1),
+  fixed.values = list(alpha = 0),
+  control = list(iprint = -1, method = "Nelder-Mead")
+)
 
- #---------------------------------------------------------
- # the log-likelihood, score vector and information matrix
- # score vector and information matrix are obtained
- # numerically.
- #---------------------------------------------------------
- e1$sll
- e1$score
- e1$info.Matrix
+coefficients(f1)
 
+plot.ts(m1$yt)
+lines(f1$fitted.values[, "mut"], col = "red")
 
- #------------------------------------------------------------
- # Generating a sample from a BARC model
- #------------------------------------------------------------
-
- m1 <- BARC.sim(linkg = "linear", linkh = "linear",
-               n = 100, seed = 2021, complete = TRUE, ctt.h = 0.6,
-               coefs = list(nu = 15, theta = 0.85, u0 = pi/4))
-
- #------------------------------------------------------------
- #  Fitting a BARC model. Assuming only alpha fixed.
- #------------------------------------------------------------
-  f1 = BARC.fit(yt = m1$yt, map = 4, ctt.h = 0.6,
-                start = list(nu = 10, theta = 0.6, u0 = 0.5),
-                lower = list(nu = 0, theta = 0, u0 = 0),
-                upper = list(theta = 1, u0 = 1),
-                fixed.values = list(alpha = 0),
-                control = list(iprint = -1, method = "Nelder-Mead"))
-
-  coefficients(f1)
-
-  plot.ts(m1$yt)
-  lines(f1$fitted.values, col = "red")
-
- #------------------------------------------------------------
- #  Out-of-sample forecast
- #------------------------------------------------------------
- pred = predict(f1, nnew = 5)
- pred$forecast
- pred$Ts.forecast
+#------------------------------------------------------------
+#  Out-of-sample forecast
+#------------------------------------------------------------
+pred <- predict(f1, nnew = 5)
+pred$forecast
+}
 
 }
 \references{
-Pumi, G.; Prass, T.S. and Souza, R.R. (2021). A dynamic model for
-double bounded time series with chaotic driven conditional averages.
-Scandinavian Journal of Statistics. Vol 48 (1), 68-86.
+\insertAllCited{}
 }
 \seealso{
-\code{\link{btsr.sim}}, \code{\link{btsr.extract}}, \code{\link{btsr.fit}}
+\link{BTSR.functions}: sim, extract and fit functions for BTSR models
 
-\code{\link{btsr.extract}}
+\link{BTSR.parent.models}: sim, extract and fit functions for parent models
 
-\code{\link{btsr.fit}}
+\link{get.defaults}: Retrieve default arguments for BTSR package functions
 }
